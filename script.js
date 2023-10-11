@@ -13,7 +13,7 @@ function addTodo(e){
         description : description
     };
 
-    axios.post('https://crudcrud.com/api/1ff345c582dd43869e9e22fb4ae686a6/todoList', myTodo)
+    axios.post('https://crudcrud.com/api/5927b9764f3e42d5882692da39ce1ff3/todoList', myTodo)
         .then((response) => {
             showListOnScreen(response.data);
             console.log(response);
@@ -27,7 +27,9 @@ function addTodo(e){
 
 
 window.addEventListener("DOMContentLoaded", () => {
-    axios.get("https://crudcrud.com/api/1ff345c582dd43869e9e22fb4ae686a6/todoList")
+    loadCompletedTasksFromServer();
+
+    axios.get("https://crudcrud.com/api/5927b9764f3e42d5882692da39ce1ff3/todoList")
         .then((response) => {
             console.log(response)
 
@@ -41,22 +43,16 @@ window.addEventListener("DOMContentLoaded", () => {
 })
 
 
-function showListOnScreen(myTodo){
-    //var todoList = document.getElementById('todoList');
+function showListOnScreen(myTodo, taskDone){
     var todoDone = document.getElementById('todoDone');
     var dataItems = document.getElementById('data-item');
     var taskDone = document.getElementById('task-done');
 
     var h1Done = document.createElement('h1');
-    
-    // var h1List = document.createElement('h1');
-    // todoList.appendChild(h1List);
-    // h1List.appendChild(document.createTextNode("Task To Do"));
 
     var liDone = document.createElement('li');
     var li = document.createElement('li');
 
-    //todoList.insertBefore(h1List, todoList.firstChild);
     dataItems.appendChild(li);
 
     li.appendChild(document.createTextNode(myTodo.todoName));
@@ -68,44 +64,93 @@ function showListOnScreen(myTodo){
     const isDone = document.createElement('input');
     isDone.type = "button";
     isDone.value = "✔";
-    //const isClicked = false;
+    isDone.className = 'ml-2 mr-2';
+    isDone.style.backgroundColor = 'chocolate';
+    
     isDone.onclick = () => {
-        // isClicked = true;
-        // if(isClicked){
-        //     h1Done.appendChild(document.createTextNode("Task Done"));
-        //     todoDone.insertBefore(h1Done, todoDone.firstChild);
-            
-        // }
-        // isClicked = false;
-
-        
+       //saveCompletedTaskToServer(myTodo._id);
         taskDone.appendChild(liDone)
         liDone.appendChild(document.createTextNode(myTodo.todoName));
-        liDone.appendChild(document.createTextNode(myTodo.description));
+        liDone.appendChild(document.createTextNode(" - " + myTodo.description));
+        const del = document.createElement('input');
+        del.type = "button";
+        del.value = "X";
+        del.className = 'ml-2 mr-2';
+        del.style.backgroundColor = 'chocolate';
+
+        liDone.appendChild(del);
+
+        del.onclick = () => {
+            axios.delete(`https://crudcrud.com/api/5927b9764f3e42d5882692da39ce1ff3/todoList/${myTodo._id}`)
+                .then((response) => {
+                    taskDone.removeChild(liDone);
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+            
+        }
 
         dataItems.removeChild(li);
+        taskDone.appendChild(liDone);
+        
+        // const h1 = document.createElement('h1');
+        // h1.innerText = myTodo.todoName + " - " + myTodo.description;
+        // document.getElementById('todoDone').appendChild(h1);
     }
     li.appendChild(isDone);
     dataItems.appendChild(li);
 
-
+    const deleteBtnWrapper = document.createElement('span');
     const deletebtn = document.createElement('input');
     deletebtn.type = "button";
     deletebtn.value = "X";
+    deletebtn.className = 'ml-2 mr-2';
+    deletebtn.style.backgroundColor = 'chocolate'; 
 
-    deletebtn.addEventListener('click', deleteButton);
+    deletebtn.addEventListener('click', (e) => deleteButton(myTodo._id, li, dataItems, e));
     
-    li.appendChild(deletebtn);
-    dataItems.appendChild(li);
+    deleteBtnWrapper.appendChild(deletebtn);
+    li.appendChild(deleteBtnWrapper);
 }
 
-function deleteButton(){
-    axios.delete(`https://crudcrud.com/api/1ff345c582dd43869e9e22fb4ae686a6/todoList/${myTodo._id}`)
+function deleteButton(todoId, litems, parent, e){
+    e.preventDefault();
+    axios.delete(`https://crudcrud.com/api/5927b9764f3e42d5882692da39ce1ff3/todoList/${todoId}`)
         .then((response) => {
-            dataItems.removeChild(li);
+            parent.removeChild(litems);
         })
         .catch((err) => {
             console.log(err);
         })
     
+}
+
+
+// Function to save the completed tasks to the server
+function saveCompletedTaskToServer(todoId) {
+    axios.post('https://crudcrud.com/api/5927b9764f3e42d5882692da39ce1ff3/todoList', { todoId })
+        .then((response) => {
+            console.log('Task marked as completed:', response.data);
+        })
+        .catch((err) => {
+            console.log(err);
+        });
+}
+
+// Function to load completed tasks from the server
+function loadCompletedTasksFromServer() {
+    return axios.get('https://crudcrud.com/api/5927b9764f3e42d5882692da39ce1ff3/todoList')
+        .then((response) => {
+            console.log('Completed tasks:', response.data);
+            const taskDone = document.getElementById('task-done');
+            response.data.forEach((task) => {
+                showListOnScreen(task, taskDone);
+            });
+            
+        })
+        .catch((error) => {
+            console.log(error);
+           // return [];
+        });
 }
